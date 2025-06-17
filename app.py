@@ -11,6 +11,22 @@ from modules.history_manager import load_path_history, save_path_history, add_pa
 def main():
     st.set_page_config(layout="wide", page_title="视频标注工具", page_icon="🎬")
 
+    # 初始化session state（必须在任何使用之前）
+    if 'project_path' not in st.session_state:
+        st.session_state.project_path = None
+    if 'project_structure' not in st.session_state:
+        st.session_state.project_structure = None
+    if 'current_video' not in st.session_state:
+        st.session_state.current_video = None
+    if 'annotations' not in st.session_state:
+        st.session_state.annotations = {}
+    if 'path_history' not in st.session_state:
+        # 从本地文件加载历史记录
+        st.session_state.path_history = load_path_history()
+    if 'show_header' not in st.session_state:
+        # 控制是否显示主标题，路径加载成功后隐藏
+        st.session_state.show_header = True
+
     # 自定义CSS样式
     st.markdown("""
     <style>
@@ -102,26 +118,14 @@ def main():
     </style>
     """, unsafe_allow_html=True)
 
-    # 主标题
-    st.markdown("""
-    <div class="main-header">
-        <h1>🎬 视频标注应用</h1>
-        <p>智能化视频标注与分析工具</p>
-    </div>
-    """, unsafe_allow_html=True)
-
-    # 初始化session state
-    if 'project_path' not in st.session_state:
-        st.session_state.project_path = None
-    if 'project_structure' not in st.session_state:
-        st.session_state.project_structure = None
-    if 'current_video' not in st.session_state:
-        st.session_state.current_video = None
-    if 'annotations' not in st.session_state:
-        st.session_state.annotations = {}
-    if 'path_history' not in st.session_state:
-        # 从本地文件加载历史记录
-        st.session_state.path_history = load_path_history()
+    # 主标题（仅在未加载路径时显示）
+    if st.session_state.show_header:
+        st.markdown("""
+        <div class="main-header">
+            <h1>🎬 视频标注应用</h1>
+            <p>智能化视频标注与分析工具</p>
+        </div>
+        """, unsafe_allow_html=True)
 
     # 侧边栏配置
     with st.sidebar:
@@ -141,6 +145,7 @@ def main():
                     if os.path.isdir(selected_history):
                         st.session_state.project_path = selected_history
                         st.session_state.project_structure = get_project_structure(selected_history)
+                        st.session_state.show_header = False  # 隐藏主标题
                         st.success("✅ 历史路径加载成功！")
                         st.rerun()
                     else:
@@ -168,6 +173,7 @@ def main():
                 if os.path.isdir(project_path_input):
                     st.session_state.project_path = project_path_input
                     st.session_state.project_structure = get_project_structure(project_path_input)
+                    st.session_state.show_header = False  # 隐藏主标题
                     
                     # 添加到历史记录并保存到本地
                     st.session_state.path_history = add_path_to_history(
@@ -187,6 +193,7 @@ def main():
                 st.session_state.project_structure = None
                 st.session_state.current_video = None
                 st.session_state.annotations = {}
+                st.session_state.show_header = True  # 重置时恢复显示主标题
                 st.rerun()
 
         # 显示当前路径状态
@@ -262,17 +269,22 @@ def main():
                                     
                                     # 验证文件是否存在
                                     if os.path.exists(video_path):
-                                        st.session_state.current_video = video_path
-                                        st.success(f"✅ 已选择视频: {video_file}")
-                                        
-                                        # Load existing annotations
-                                        st.session_state.annotations = load_annotation(video_path)
-                                        
-                                        # Display annotation form and update session state
-                                        updated_annotations = display_annotation_form(st.session_state.annotations)
-                                        if updated_annotations:
-                                            st.session_state.annotations = updated_annotations
+                                        # 只有当选择的视频与当前视频不同时才更新和重新运行
+                                        if st.session_state.current_video != video_path:
+                                            st.session_state.current_video = video_path
+                                            st.success(f"✅ 已选择视频: {video_file}")
+                                            
+                                            # Load existing annotations
+                                            st.session_state.annotations = load_annotation(video_path)
+                                            
+                                            # 选择新视频后立即重新运行页面以显示视频播放器
                                             st.rerun()
+                                        else:
+                                            # 如果是同一个视频，仍然显示标注表单
+                                            updated_annotations = display_annotation_form(st.session_state.annotations)
+                                            if updated_annotations:
+                                                st.session_state.annotations = updated_annotations
+                                                st.rerun()
                                     else:
                                         st.error(f"❌ 视频文件不存在: {video_path}")
                             else:
