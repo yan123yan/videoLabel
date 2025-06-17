@@ -1,2 +1,12 @@
 [server]
 port = 8503
+
+[theme]
+base = "light"
+primaryColor = "#667eea"
+backgroundColor = "#ffffff"
+secondaryBackgroundColor = "#f8f9fa"
+textColor = "#262730"
+
+[browser]
+gatherUsageStats = false
