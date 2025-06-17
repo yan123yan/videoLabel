@@ -6,6 +6,7 @@ from modules.video_player import display_video
 from modules.annotation_form import display_annotation_form
 from modules.data_storage import save_annotation, load_annotation
 from modules.progress_manager import display_progress
+from modules.history_manager import load_path_history, save_path_history, add_path_to_history, clear_path_history
 
 def main():
     st.set_page_config(layout="wide", page_title="视频标注工具", page_icon="🎬")
@@ -70,6 +71,21 @@ def main():
         padding: 1rem;
     }
     
+    /* 路径输入框和显示的样式 */
+    .stTextInput input {
+        word-wrap: break-word !important;
+        word-break: break-all !important;
+        white-space: normal !important;
+    }
+    
+    .path-display {
+        word-wrap: break-word;
+        word-break: break-all;
+        white-space: normal;
+        max-width: 100%;
+        overflow-wrap: break-word;
+    }
+    
     /* 历史记录样式 */
     .history-item {
         padding: 0.3rem 0.5rem;
@@ -104,7 +120,8 @@ def main():
     if 'annotations' not in st.session_state:
         st.session_state.annotations = {}
     if 'path_history' not in st.session_state:
-        st.session_state.path_history = []
+        # 从本地文件加载历史记录
+        st.session_state.path_history = load_path_history()
 
     # 侧边栏配置
     with st.sidebar:
@@ -128,6 +145,15 @@ def main():
                         st.rerun()
                     else:
                         st.error("❌ 历史路径不存在！")
+            
+            # 清空历史记录按钮
+            if st.button("🗑️ 清空历史记录", key="clear_history"):
+                if clear_path_history():
+                    st.session_state.path_history = []
+                    st.success("✅ 历史记录已清空！")
+                    st.rerun()
+                else:
+                    st.error("❌ 清空历史记录失败！")
         
         st.markdown("#### 🆕 新建路径")
         project_path_input = st.text_input(
@@ -143,11 +169,12 @@ def main():
                     st.session_state.project_path = project_path_input
                     st.session_state.project_structure = get_project_structure(project_path_input)
                     
-                    # 添加到历史记录
-                    if project_path_input not in st.session_state.path_history:
-                        st.session_state.path_history.insert(0, project_path_input)
-                        # 只保留最近10个路径
-                        st.session_state.path_history = st.session_state.path_history[:10]
+                    # 添加到历史记录并保存到本地
+                    st.session_state.path_history = add_path_to_history(
+                        project_path_input,
+                        st.session_state.path_history
+                    )
+                    save_path_history(st.session_state.path_history)
                     
                     st.success("✅ 项目加载成功！")
                     st.rerun()
@@ -168,7 +195,7 @@ def main():
             st.markdown(f"""
             <div class="status-success">
                 <strong>当前路径:</strong><br>
-                {st.session_state.project_path}
+                <div class="path-display">{st.session_state.project_path}</div>
             </div>
             """, unsafe_allow_html=True)
             
@@ -198,22 +225,62 @@ def main():
             st.header("标注区域")
             # Annotation form will be displayed here
             if st.session_state.project_structure:
-                # Logic to select a video
-                folder = st.selectbox("选择文件夹", list(st.session_state.project_structure.keys()))
-                if folder:
-                    video_file = st.selectbox("选择视频", st.session_state.project_structure[folder])
-                    if video_file:
-                        video_path = os.path.join(st.session_state.project_path, folder, video_file)
-                        st.session_state.current_video = video_path
+                # 显示项目结构调试信息
+                if st.checkbox("显示调试信息", key="debug_info"):
+                    st.write("项目结构:", st.session_state.project_structure)
+                    st.write("项目路径:", st.session_state.project_path)
+                
+                # 检查是否有视频文件
+                if not st.session_state.project_structure:
+                    st.warning("⚠️ 在指定路径中未找到任何视频文件")
+                    st.info("支持的视频格式: .mp4, .avi, .mov, .mkv, .wmv, .flv, .webm, .m4v")
+                else:
+                    # Logic to select a video
+                    folder_list = list(st.session_state.project_structure.keys())
+                    if folder_list:
+                        folder = st.selectbox(
+                            "选择文件夹",
+                            options=[""] + folder_list,
+                            format_func=lambda x: "请选择文件夹..." if x == "" else f"{x} ({len(st.session_state.project_structure[x])} 个视频)" if x else ""
+                        )
                         
-                        # Load existing annotations
-                        st.session_state.annotations = load_annotation(video_path)
-                        
-                        # Display annotation form and update session state
-                        updated_annotations = display_annotation_form(st.session_state.annotations)
-                        if updated_annotations:
-                            st.session_state.annotations = updated_annotations
-                            st.rerun()
+                        if folder and folder in st.session_state.project_structure:
+                            video_list = st.session_state.project_structure[folder]
+                            if video_list:
+                                video_file = st.selectbox(
+                                    "选择视频",
+                                    options=[""] + video_list,
+                                    format_func=lambda x: "请选择视频..." if x == "" else x
+                                )
+                                
+                                if video_file and video_file != "":
+                                    # 构建视频路径
+                                    if folder == "根目录":
+                                        video_path = os.path.join(st.session_state.project_path, video_file)
+                                    else:
+                                        video_path = os.path.join(st.session_state.project_path, folder, video_file)
+                                    
+                                    # 验证文件是否存在
+                                    if os.path.exists(video_path):
+                                        st.session_state.current_video = video_path
+                                        st.success(f"✅ 已选择视频: {video_file}")
+                                        
+                                        # Load existing annotations
+                                        st.session_state.annotations = load_annotation(video_path)
+                                        
+                                        # Display annotation form and update session state
+                                        updated_annotations = display_annotation_form(st.session_state.annotations)
+                                        if updated_annotations:
+                                            st.session_state.annotations = updated_annotations
+                                            st.rerun()
+                                    else:
+                                        st.error(f"❌ 视频文件不存在: {video_path}")
+                            else:
+                                st.warning(f"⚠️ 文件夹 '{folder}' 中没有视频文件")
+                    else:
+                        st.warning("⚠️ 没有找到包含视频文件的文件夹")
+            else:
+                st.info("📋 数据加载成功后，请在此处选择视频进行标注")
 
 
 if __name__ == "__main__":

@@ -35,7 +35,11 @@ def display_progress(project_structure, project_path):
     
     for folder, videos in project_structure.items():
         for video_file in videos:
-            video_path = os.path.join(project_path, folder, video_file)
+            # 处理根目录的特殊情况
+            if folder == "根目录":
+                video_path = os.path.join(project_path, video_file)
+            else:
+                video_path = os.path.join(project_path, folder, video_file)
             annotation_path = get_annotation_path(video_path)
             if is_annotation_complete(annotation_path):
                 annotated_videos += 1
@@ -95,7 +99,11 @@ def display_progress(project_structure, project_path):
             folder_total = len(videos)
             folder_annotated = 0
             for video_file in videos:
-                video_path = os.path.join(project_path, folder, video_file)
+                # 处理根目录的特殊情况
+                if folder == "根目录":
+                    video_path = os.path.join(project_path, video_file)
+                else:
+                    video_path = os.path.join(project_path, folder, video_file)
                 annotation_path = get_annotation_path(video_path)
                 if is_annotation_complete(annotation_path):
                     folder_annotated += 1
