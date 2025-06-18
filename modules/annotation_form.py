@@ -2,10 +2,53 @@
 import streamlit as st
 from config.word_bank import DRIVING_CONTROL_STYLE, VISUAL_ATTENTION_STYLE, INTEGRATED_STYLE, SUGGESTION
 from modules.data_storage import save_annotation
+from modules.favorites_manager import add_to_favorites, remove_from_favorites, is_favorited, save_favorites
 
 def display_annotation_form(annotations):
     """Displays the annotation form and handles user input."""
     
+    # 收藏功能区域
+    current_video = st.session_state.get('current_video')
+    if current_video:
+        favorites = st.session_state.get('favorites', set())
+        is_fav = is_favorited(current_video, favorites)
+        
+        # 创建收藏按钮的网格布局，确保按钮和状态在同一水平线上
+        # 调整列比例，给收藏按钮更多空间，确保"取消收藏"文字有足够宽度
+        col1, col2 = st.columns([5, 2])
+        with col1:
+            if is_fav:
+                if st.button("❤️ 取消收藏", key="unfavorite_btn", help="点击取消收藏此视频", use_container_width=True):
+                    new_favorites = remove_from_favorites(current_video, favorites)
+                    st.session_state.favorites = new_favorites
+                    if save_favorites(new_favorites):
+                        st.toast("已取消收藏！", icon="💔")
+                        st.rerun()
+                    else:
+                        st.error("取消收藏失败！")
+            else:
+                if st.button("🤍 收藏", key="favorite_btn", help="点击收藏此视频", use_container_width=True):
+                    new_favorites = add_to_favorites(current_video, favorites)
+                    st.session_state.favorites = new_favorites
+                    if save_favorites(new_favorites):
+                        st.toast("收藏成功！", icon="❤️")
+                        st.rerun()
+                    else:
+                        st.error("收藏失败！")
+        
+        with col2:
+            # 使用容器确保垂直居中对齐，与按钮在同一水平线上
+            status_container = st.container()
+            with status_container:
+                # 添加一些垂直间距，确保状态文字与按钮垂直居中对齐
+                st.markdown("<div style='margin-top: 8px;'>", unsafe_allow_html=True)
+                if is_fav:
+                    st.markdown("**❤️ 已收藏**")
+                else:
+                    st.markdown("**🤍 未收藏**")
+                st.markdown("</div>", unsafe_allow_html=True)
+    
+    st.divider()
     st.subheader("必须标注项")
 
     # --- Top half of the form (mandatory) ---

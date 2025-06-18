@@ -7,6 +7,7 @@ from modules.annotation_form import display_annotation_form
 from modules.data_storage import save_annotation, load_annotation
 from modules.progress_manager import display_progress
 from modules.history_manager import load_path_history, save_path_history, add_path_to_history, clear_path_history
+from modules.favorites_manager import load_favorites, is_favorited
 
 def main():
     st.set_page_config(layout="wide", page_title="视频标注工具", page_icon="🎬")
@@ -23,6 +24,9 @@ def main():
     if 'path_history' not in st.session_state:
         # 从本地文件加载历史记录
         st.session_state.path_history = load_path_history()
+    if 'favorites' not in st.session_state:
+        # 从本地文件加载收藏记录
+        st.session_state.favorites = load_favorites()
     if 'show_header' not in st.session_state:
         # 控制是否显示主标题，路径加载成功后隐藏
         st.session_state.show_header = True
@@ -254,10 +258,27 @@ def main():
                         if folder and folder in st.session_state.project_structure:
                             video_list = st.session_state.project_structure[folder]
                             if video_list:
+                                # 为视频文件添加收藏状态显示
+                                def format_video_name(video_name):
+                                    if video_name == "":
+                                        return "请选择视频..."
+                                    
+                                    # 构建完整的视频路径用于检查收藏状态
+                                    if folder == "根目录":
+                                        video_path = os.path.join(st.session_state.project_path, video_name)
+                                    else:
+                                        video_path = os.path.join(st.session_state.project_path, folder, video_name)
+                                    
+                                    # 检查是否已收藏
+                                    if is_favorited(video_path, st.session_state.favorites):
+                                        return f"⭐ {video_name}"
+                                    else:
+                                        return video_name
+                                
                                 video_file = st.selectbox(
                                     "选择视频",
                                     options=[""] + video_list,
-                                    format_func=lambda x: "请选择视频..." if x == "" else x
+                                    format_func=format_video_name
                                 )
                                 
                                 if video_file and video_file != "":
