@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import os
+from natsort import natsorted
 
 def get_project_structure(project_path):
     """
@@ -24,6 +25,7 @@ def get_project_structure(project_path):
         for root, dirs, files in os.walk(project_path):
             # 只检查直接子目录，避免过深的嵌套
             if root == project_path:
+                dirs[:] = natsorted(dirs)
                 for d in dirs:
                     folder_path = os.path.join(project_path, d)
                     try:
