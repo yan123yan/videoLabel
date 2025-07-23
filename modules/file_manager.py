@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import os
 from natsort import natsorted
+from modules.language_manager import get_text
 
 def get_project_structure(project_path):
     """
@@ -19,7 +20,8 @@ def get_project_structure(project_path):
                 root_video_files.append(file)
         
         if root_video_files:
-            project_structure["根目录"] = sorted(root_video_files)
+            # 使用固定的内部标识符，而不是翻译后的文本
+            project_structure["__ROOT__"] = sorted(root_video_files)
 
         # 然后检查子文件夹
         for root, dirs, files in os.walk(project_path):
@@ -40,6 +42,6 @@ def get_project_structure(project_path):
                         continue
                         
     except Exception as e:
-        print(f"扫描项目路径时出错: {e}")
+        print(get_text("scan_error").format(e=e))
     
     return project_structure

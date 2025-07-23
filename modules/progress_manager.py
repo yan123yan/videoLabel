@@ -2,6 +2,13 @@
 import streamlit as st
 import os
 from modules.data_storage import get_annotation_path
+from modules.language_manager import get_text
+
+def get_display_folder_name(folder_name):
+    """获取文件夹的显示名称（处理根目录的翻译）"""
+    if folder_name == "__ROOT__":
+        return get_text("root_directory")
+    return folder_name
 
 def is_annotation_complete(annotation_path):
     """检查txt标注文件是否包含有效内容"""
@@ -36,7 +43,7 @@ def display_progress(project_structure, project_path):
     for folder, videos in project_structure.items():
         for video_file in videos:
             # 处理根目录的特殊情况
-            if folder == "根目录":
+            if folder == "__ROOT__":
                 video_path = os.path.join(project_path, video_file)
             else:
                 video_path = os.path.join(project_path, folder, video_file)
@@ -48,22 +55,25 @@ def display_progress(project_structure, project_path):
         progress_percentage = annotated_videos / total_videos
         
         # 总进度显示
-        st.sidebar.markdown("#### 📈 总体进度")
+        st.sidebar.markdown(get_text("overall_progress"))
         st.sidebar.progress(progress_percentage)
         
         # 进度状态显示
         if progress_percentage == 1.0:
             status_color = "#28a745"  # 绿色
             status_icon = "✅"
-            status_text = "已完成"
+            status_text = get_text("completed")
         elif progress_percentage >= 0.5:
             status_color = "#ffc107"  # 黄色
             status_icon = "🟡"
-            status_text = "进行中"
+            status_text = get_text("in_progress")
         else:
             status_color = "#dc3545"  # 红色
             status_icon = "🔴"
-            status_text = "待完成"
+            status_text = get_text("pending")
+        
+        progress_info = get_text("progress_info").format(annotated_videos=annotated_videos, total_videos=total_videos)
+        completion_rate = get_text("completion_rate")
         
         st.sidebar.markdown(f"""
         <div style="
@@ -74,12 +84,15 @@ def display_progress(project_structure, project_path):
             margin: 0.5rem 0;
         ">
             <strong>{status_icon} {status_text}</strong><br>
-            已完成: {annotated_videos} / {total_videos} 个视频<br>
-            完成率: {progress_percentage:.1%}
+            {progress_info}<br>
+            {completion_rate} {progress_percentage:.1%}
         </div>
         """, unsafe_allow_html=True)
     else:
-        st.sidebar.markdown("""
+        warning_text = get_text("warning")
+        no_video_text = get_text("no_video_files")
+        
+        st.sidebar.markdown(f"""
         <div style="
             background-color: #f8d7da;
             border-left: 4px solid #dc3545;
@@ -87,20 +100,20 @@ def display_progress(project_structure, project_path):
             border-radius: 3px;
             margin: 0.5rem 0;
         ">
-            <strong>⚠️ 提示</strong><br>
-            未找到视频文件
+            <strong>{warning_text}</strong><br>
+            {no_video_text}
         </div>
         """, unsafe_allow_html=True)
 
     # 各文件夹详细进度
     if project_structure:
-        st.sidebar.markdown("#### 📂 文件夹详情")
+        st.sidebar.markdown(get_text("folder_details"))
         for folder, videos in project_structure.items():
             folder_total = len(videos)
             folder_annotated = 0
             for video_file in videos:
                 # 处理根目录的特殊情况
-                if folder == "根目录":
+                if folder == "__ROOT__":
                     video_path = os.path.join(project_path, video_file)
                 else:
                     video_path = os.path.join(project_path, folder, video_file)
@@ -127,7 +140,7 @@ def display_progress(project_structure, project_path):
                     margin: 0.3rem 0;
                     border: 1px solid #e9ecef;
                 ">
-                    <strong>{folder}</strong><br>
+                    <strong>{get_display_folder_name(folder)}</strong><br>
                     <div style="
                         background-color: #e9ecef;
                         border-radius: 10px;
@@ -145,6 +158,7 @@ def display_progress(project_structure, project_path):
                 </div>
                 """, unsafe_allow_html=True)
             else:
+                no_videos_text = get_text("no_videos")
                 st.sidebar.markdown(f"""
                 <div style="
                     background-color: #f8f9fa;
@@ -153,7 +167,7 @@ def display_progress(project_structure, project_path):
                     margin: 0.3rem 0;
                     border: 1px solid #e9ecef;
                 ">
-                    <strong>{folder}</strong><br>
-                    <small>0/0 (无视频)</small>
+                    <strong>{get_display_folder_name(folder)}</strong><br>
+                    <small>0/0 {no_videos_text}</small>
                 </div>
                 """, unsafe_allow_html=True)
