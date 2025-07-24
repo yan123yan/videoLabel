@@ -7,9 +7,18 @@ def get_annotation_path(video_path):
     """Generates the path for the annotation file based on the video path."""
     return os.path.splitext(video_path)[0] + '.txt'
 
-def get_json_annotation_path(video_path):
-    """Generates the path for the JSON annotation file based on the video path."""
-    return os.path.splitext(video_path)[0] + '.json'
+def get_json_annotation_path(video_path, keyword=None):
+    """
+    Generates the path for the JSON annotation file based on the video path and keyword.
+    命名规则：视频名称_response_{用户自定义关键字}.json
+    """
+    import streamlit as st
+    if keyword is None:
+        # 从session state获取用户自定义关键字
+        keyword = st.session_state.get('json_keyword', 'example')
+    
+    base_name = os.path.splitext(video_path)[0]
+    return f"{base_name}_response_{keyword}.json"
 
 def parse_txt_annotation(content):
     """解析txt格式的标注内容"""
@@ -184,11 +193,11 @@ def load_json_annotation(video_path):
 
 def save_json_annotation(video_path, annotation_data, rating_data):
     """
-    Saves the complete annotation data including ratings to a JSON file.
+    Saves the rating data to the user's existing JSON file.
     
     Args:
         video_path: Path to the video file
-        annotation_data: Dictionary containing annotation data from txt file
+        annotation_data: Dictionary containing annotation data from txt file (not used now)
         rating_data: Dictionary containing rating scores (factuality, relevance, coherence, usefulness)
     
     Returns:
@@ -197,26 +206,21 @@ def save_json_annotation(video_path, annotation_data, rating_data):
     json_path = get_json_annotation_path(video_path)
     
     try:
-        # 准备JSON数据结构，基于模板格式
-        json_data = {
-            "raw_response": TEMPLATE_RAW_RESPONSE,
-            "extracted_sections": {
-                "scene_description": annotation_data.get('scene_description', ''),
-                "driver_attention": annotation_data.get('drivers_attention', ''),
-                "human_machine_interaction": annotation_data.get('human_machine_interaction', ''),
-                "evaluation_suggestions": annotation_data.get('evaluation_suggestions', ''),
-                "recommended_actions": annotation_data.get('suggestion', [])
-            },
-            "video_path": video_path,
-            "factuality": rating_data.get('factuality', ''),
-            "relevance": rating_data.get('relevance', ''),
-            "coherence": rating_data.get('coherence', ''),
-            "usefulness": rating_data.get('usefulness', '')
-        }
+        # 首先尝试加载已存在的用户JSON文件
+        existing_data = {}
+        if os.path.exists(json_path):
+            with open(json_path, 'r', encoding='utf-8') as f:
+                existing_data = json.load(f)
         
-        # 保存JSON文件
+        # 更新或添加评分字段
+        existing_data['factuality'] = rating_data.get('factuality', '')
+        existing_data['relevance'] = rating_data.get('relevance', '')
+        existing_data['coherence'] = rating_data.get('coherence', '')
+        existing_data['usefulness'] = rating_data.get('usefulness', '')
+        
+        # 保存更新后的JSON文件
         with open(json_path, 'w', encoding='utf-8') as f:
-            json.dump(json_data, f, ensure_ascii=False, indent=2)
+            json.dump(existing_data, f, ensure_ascii=False, indent=2)
         
         return True
     except Exception as e:

@@ -40,6 +40,9 @@ def main():
     if 'show_header' not in st.session_state:
         # 控制是否显示主标题，路径加载成功后隐藏
         st.session_state.show_header = True
+    if 'json_keyword' not in st.session_state:
+        # 用户自定义的JSON文件命名关键字
+        st.session_state.json_keyword = "qwenv2_direct_injection"  # 可以根据需要修改这个默认值
 
     # 自定义CSS样式
     st.markdown("""

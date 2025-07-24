@@ -13,8 +13,14 @@ def display_report_rating(annotation_data, existing_ratings=None):
         # 标题
         st.markdown(f"### {get_text('co_driving_report_rating')}")
         
+        # 获取当前视频路径并加载用户JSON文件
+        video_path = st.session_state.get('current_video')
+        user_json_data = None
+        if video_path:
+            user_json_data = load_json_annotation(video_path)
+        
         # 报告输出框
-        report_content = format_report_content(annotation_data)
+        report_content = format_report_content(user_json_data)
         st.text_area(
             get_text("report") + ":",
             value=report_content,
@@ -146,30 +152,31 @@ def display_report_rating(annotation_data, existing_ratings=None):
     return None
 
 
-def format_report_content(annotation_data):
+def format_report_content(user_json_data):
     """
-    格式化报告内容，从annotation_data中提取extracted sections信息
+    格式化报告内容，从用户提供的JSON文件中提取extracted_sections信息
     以JSON格式显示
+    
+    Args:
+        user_json_data: 用户提供的JSON数据，如果为None则显示提示信息
     """
     import json
     
-    # 构建extracted_sections字典
-    extracted_sections = {
-        "scene_description": annotation_data.get('scene_description', ''),
-        "driver_attention": annotation_data.get('drivers_attention', ''),
-        "human_machine_interaction": annotation_data.get('human_machine_interaction', ''),
-        "evaluation_suggestions": annotation_data.get('evaluation_suggestions', ''),
-        "recommended_actions": annotation_data.get('suggestion', [])
-    }
+    # 如果没有用户JSON数据
+    if user_json_data is None:
+        return "No user JSON file found. Please ensure the JSON file is placed in the same directory as the video with the naming format: videoname_response_keyword.json"
+    
+    # 获取extracted_sections
+    extracted_sections = user_json_data.get('extracted_sections', {})
     
     # 创建包含extracted_sections的JSON对象
     json_output = {
         "extracted_sections": extracted_sections
     }
     
-    # 如果没有任何数据，返回提示信息
-    if all(not v for v in extracted_sections.values()):
-        return "No report data available. Please complete the annotation first."
+    # 如果extracted_sections为空或不存在，返回提示信息
+    if not extracted_sections:
+        return "The 'extracted_sections' field is empty or not found in the user JSON file."
     
     # 返回格式化的JSON字符串
     return json.dumps(json_output, ensure_ascii=False, indent=2)
