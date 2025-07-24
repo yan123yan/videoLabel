@@ -58,6 +58,11 @@ def display_language_selector_sidebar():
     # 如果语言改变，更新并重新运行
     if selected_lang != current_lang:
         st.session_state.language = selected_lang
+        # 清除当前视频和标注数据，确保重新选择
+        if 'current_video' in st.session_state:
+            st.session_state.current_video = None
+        if 'annotations' in st.session_state:
+            st.session_state.annotations = {}
         st.rerun()
 
 def get_language_full_name():

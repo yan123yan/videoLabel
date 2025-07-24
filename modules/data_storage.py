@@ -1,10 +1,15 @@
 # -*- coding: utf-8 -*-
 import os
 import re
+import json
 
 def get_annotation_path(video_path):
     """Generates the path for the annotation file based on the video path."""
     return os.path.splitext(video_path)[0] + '.txt'
+
+def get_json_annotation_path(video_path):
+    """Generates the path for the JSON annotation file based on the video path."""
+    return os.path.splitext(video_path)[0] + '.json'
 
 def parse_txt_annotation(content):
     """解析txt格式的标注内容"""
@@ -107,3 +112,113 @@ def load_annotation(video_path):
             print(f"Error loading annotation file: {e}")
             return {}
     return {}
+
+# 固定的raw_response模板文本
+TEMPLATE_RAW_RESPONSE = """### Step 1: Style Interpretation as Hypothesis
+
+#### Driving Control Style: Smooth Driving
+- **Behavioral Implication**: Indicates a stable and consistent driving rhythm with steady acceleration and low steering variability.
+- **Expected Observations**: Smooth speed changes, minimal braking, and consistent steering angles.
+
+#### Visual Attention Style: Focused on Forward Road
+- **Behavioral Implication**: Indicates strong attention on the forward road area.
+- **Expected Observations**: Gaze focused on the road ahead, minimal distraction.
+
+#### Integrated Style: Focused
+- **Behavioral Implication**: High task focus and sustained attention to road and traffic dynamics.
+- **Expected Observations**: Consistent attention to the road, minimal distraction, and engagement with the driving environment.
+
+### Step 2: Cross-Modal Consistency Verification
+
+#### Driving Signals:
+- **Speed**: The speed fluctuates but remains relatively stable around 20-25 m/s, with a slight decrease and then a sharp drop to 1.7 m/s and 1.1 m/s, followed by a recovery to 3.1 m/s and 6.6 m/s.
+- **Acceleration**: The acceleration is generally smooth with some fluctuations, peaking at 4.4 m/s² and 3.7 m/s².
+- **Steering Angle**: The steering angle is minimal and mostly stable, with slight changes indicating minor steering adjustments.
+- **Braking Signal**: The braking signal is low and mostly absent, with a brief increase to 0.4 and 0.3, indicating light braking.
+
+#### Object Fixations:
+- The driver's gaze is primarily on the dashboard and autonomous information, with occasional shifts to vehicles and the rearview mirror.
+
+#### Autonomous Mode:
+- The vehicle is in manual mode throughout the segment.
+
+### Step 3: Final Structured Report
+
+#### Scene Description:
+The video depicts a driving scenario on a multi-lane road with a clear view of the road ahead. The road is surrounded by trees and open fields, with a few other vehicles visible in the distance. The weather appears clear, and the road conditions are dry.
+
+#### Driver's Attention:
+The driver's gaze is predominantly focused on the dashboard and autonomous information, with occasional glances at the vehicles and rearview mirror. This suggests a high level of engagement with the driving environment and the vehicle's systems. The driver appears to be paying attention to the road ahead and the vehicle's status, which aligns with the "Focused on Forward Road" and "Focused" styles.
+
+#### Human-Machine Interaction:
+The driver is in manual mode, and the vehicle's autonomous systems are not actively engaged. The driver's steering and braking actions are smooth, with minimal steering adjustments and light braking. The driver's attention to the dashboard and autonomous information suggests a level of trust in the vehicle's systems, which is consistent with the "Smooth Driving" and "Focused" styles.
+
+#### Evaluation & Suggestions:
+The driver's behavior is generally smooth and focused, with minimal distractions and consistent attention to the road and the vehicle's systems. The driver's actions are in line with the "Smooth Driving" and "Focused" styles, indicating a stable and controlled driving pattern. However, the occasional glances at the rearview mirror and vehicles suggest a need for further situational awareness.
+
+#### Recommended Actions:
+1. **Observe system prompts**: The driver should continue to pay attention to the vehicle's autonomous systems and prompts to ensure optimal interaction and safety.
+2. **Check mirrors**: The driver should periodically check the rearview mirror to maintain situational awareness and ensure no blind spots.
+3. **Focus on traffic**: The driver should remain focused on the road and traffic conditions to maintain a safe and controlled driving environment."""
+
+def load_json_annotation(video_path):
+    """
+    Loads the JSON annotation file if it exists.
+    
+    Args:
+        video_path: Path to the video file
+    
+    Returns:
+        Dictionary containing the JSON data if file exists, None otherwise
+    """
+    json_path = get_json_annotation_path(video_path)
+    
+    if os.path.exists(json_path):
+        try:
+            with open(json_path, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except Exception as e:
+            print(f"Error loading JSON annotation file: {e}")
+            return None
+    return None
+
+def save_json_annotation(video_path, annotation_data, rating_data):
+    """
+    Saves the complete annotation data including ratings to a JSON file.
+    
+    Args:
+        video_path: Path to the video file
+        annotation_data: Dictionary containing annotation data from txt file
+        rating_data: Dictionary containing rating scores (factuality, relevance, coherence, usefulness)
+    
+    Returns:
+        True if successful, False otherwise
+    """
+    json_path = get_json_annotation_path(video_path)
+    
+    try:
+        # 准备JSON数据结构，基于模板格式
+        json_data = {
+            "raw_response": TEMPLATE_RAW_RESPONSE,
+            "extracted_sections": {
+                "scene_description": annotation_data.get('scene_description', ''),
+                "driver_attention": annotation_data.get('drivers_attention', ''),
+                "human_machine_interaction": annotation_data.get('human_machine_interaction', ''),
+                "evaluation_suggestions": annotation_data.get('evaluation_suggestions', ''),
+                "recommended_actions": annotation_data.get('suggestion', [])
+            },
+            "video_path": video_path,
+            "factuality": rating_data.get('factuality', ''),
+            "relevance": rating_data.get('relevance', ''),
+            "coherence": rating_data.get('coherence', ''),
+            "usefulness": rating_data.get('usefulness', '')
+        }
+        
+        # 保存JSON文件
+        with open(json_path, 'w', encoding='utf-8') as f:
+            json.dump(json_data, f, ensure_ascii=False, indent=2)
+        
+        return True
+    except Exception as e:
+        print(f"Error saving JSON annotation file: {e}")
+        return False

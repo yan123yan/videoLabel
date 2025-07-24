@@ -189,7 +189,7 @@ TRANSLATIONS = {
     
     # Co-driving Report Rating面板
     "co_driving_report_rating": {
-        "zh": "Co-driving Report Rating",
+        "zh": "共驾报告评分",
         "en": "Co-driving Report Rating"
     },
     "report_label": {
@@ -231,6 +231,22 @@ TRANSLATIONS = {
     "usefulness_help": {
         "zh": "评价实际用途",
         "en": "Rate the practical usefulness"
+    },
+    "please_select_rating": {
+        "zh": "请选择...",
+        "en": "Please select..."
+    },
+    "rating_fields": {
+        "zh": "评分字段",
+        "en": "Rating Fields"
+    },
+    "report": {
+        "zh": "报告",
+        "en": "Report"
+    },
+    "rating_criteria": {
+        "zh": "评分标准",
+        "en": "Rating Criteria"
     },
     "save_rating": {
         "zh": "保存评分",
@@ -439,5 +455,27 @@ TRANSLATIONS = {
     "scan_error": {
         "zh": "扫描项目路径时出错: {e}",
         "en": "Error scanning project path: {e}"
+    },
+    
+    # JSON保存相关
+    "save_json": {
+        "zh": "保存 JSON",
+        "en": "Save JSON"
+    },
+    "json_saved_success": {
+        "zh": "JSON 文件保存成功！",
+        "en": "JSON file saved successfully!"
+    },
+    "json_save_failed": {
+        "zh": "保存 JSON 文件失败！",
+        "en": "Failed to save JSON file!"
+    },
+    "no_video_selected": {
+        "zh": "未选择视频！",
+        "en": "No video selected!"
+    },
+    "fill_fields_before_save": {
+        "zh": "请在保存前填写以下字段: {fields}",
+        "en": "Please fill in the following fields before saving: {fields}"
     }
 }
