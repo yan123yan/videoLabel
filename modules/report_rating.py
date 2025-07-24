@@ -149,36 +149,27 @@ def display_report_rating(annotation_data, existing_ratings=None):
 def format_report_content(annotation_data):
     """
     格式化报告内容，从annotation_data中提取extracted sections信息
+    以JSON格式显示
     """
-    sections = []
+    import json
     
-    # Scene Description
-    scene_desc = annotation_data.get('scene_description', '')
-    if scene_desc:
-        sections.append(f"Scene Description: {scene_desc}")
+    # 构建extracted_sections字典
+    extracted_sections = {
+        "scene_description": annotation_data.get('scene_description', ''),
+        "driver_attention": annotation_data.get('drivers_attention', ''),
+        "human_machine_interaction": annotation_data.get('human_machine_interaction', ''),
+        "evaluation_suggestions": annotation_data.get('evaluation_suggestions', ''),
+        "recommended_actions": annotation_data.get('suggestion', [])
+    }
     
-    # Driver's Attention
-    drivers_attention = annotation_data.get('drivers_attention', '')
-    if drivers_attention:
-        sections.append(f"\n\nDriver's Attention: {drivers_attention}")
-    
-    # Human-Machine Interaction
-    human_machine = annotation_data.get('human_machine_interaction', '')
-    if human_machine:
-        sections.append(f"\n\nHuman-Machine Interaction: {human_machine}")
-    
-    # Evaluation & Suggestions
-    eval_suggestions = annotation_data.get('evaluation_suggestions', '')
-    if eval_suggestions:
-        sections.append(f"\n\nEvaluation & Suggestions: {eval_suggestions}")
-    
-    # Recommended Actions (从suggestions字段获取)
-    suggestions = annotation_data.get('suggestion', [])
-    if suggestions:
-        sections.append(f"\n\nRecommended Actions: {', '.join(suggestions)}")
+    # 创建包含extracted_sections的JSON对象
+    json_output = {
+        "extracted_sections": extracted_sections
+    }
     
     # 如果没有任何数据，返回提示信息
-    if not sections:
+    if all(not v for v in extracted_sections.values()):
         return "No report data available. Please complete the annotation first."
     
-    return ''.join(sections)
+    # 返回格式化的JSON字符串
+    return json.dumps(json_output, ensure_ascii=False, indent=2)
