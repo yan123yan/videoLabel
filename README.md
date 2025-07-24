@@ -1,14 +1,23 @@
 # 🎬 视频标注应用
 
-一个基于 Streamlit 的智能化视频标注与分析工具，专门用于驾驶行为视频的标注工作。
+一个基于 Streamlit 的智能化视频标注与分析工具，专门用于驾驶行为视频的标注工作。支持多种视频格式，提供丰富的标注选项，并具备完善的进度跟踪和数据管理功能。
+
+## 🔥 最新更新
+- 新增评分报告功能，支持真实性、准确性、相关性和连贯性评分
+- 优化收藏功能，支持快速定位重要视频
+- 改进文件排序算法，使用自然排序提升用户体验
+- 修复多个已知问题，提升系统稳定性
 
 ## 📋 目录
 - [功能特性](#功能特性)
+- [系统要求](#系统要求)
 - [安装指南](#安装指南)
 - [使用说明](#使用说明)
 - [标注规范](#标注规范)
 - [文件结构](#文件结构)
+- [开发指南](#开发指南)
 - [常见问题](#常见问题)
+- [更新日志](#更新日志)
 
 ## ✨ 功能特性
 
@@ -28,6 +37,27 @@
 - **整体进度**: 显示项目总体完成情况
 - **文件夹进度**: 每个文件夹的标注进度统计
 - **状态跟踪**: 实时更新标注状态
+- **评分报告**: 支持对标注质量进行多维度评分
+
+### 🌐 国际化支持
+- **多语言界面**: 支持中文和英文界面切换
+- **语言记忆**: 自动保存用户的语言偏好设置
+
+## 💻 系统要求
+
+### 最低配置
+- **处理器**: 双核 CPU 2.0GHz 以上
+- **内存**: 4GB RAM
+- **存储**: 500MB 可用空间（不含视频文件）
+- **显示器**: 1366x768 分辨率
+- **浏览器**: Chrome 90+, Firefox 88+, Safari 14+, Edge 90+
+
+### 推荐配置
+- **处理器**: 四核 CPU 3.0GHz 以上
+- **内存**: 8GB RAM 以上
+- **存储**: 2GB 可用空间
+- **显示器**: 1920x1080 分辨率或更高
+- **网络**: 稳定的互联网连接（用于加载 Streamlit 资源）
 
 ## 🚀 安装指南
 
@@ -48,14 +78,29 @@
    pip install -r requirements.txt
    ```
 
-3. **运行应用**
+3. **创建必要的目录**
    ```bash
-   streamlit run app.py
+   mkdir -p data
    ```
 
-4. **访问应用**
+4. **运行应用**
+   ```bash
+   streamlit run app.py --server.port 8503
+   ```
+
+5. **访问应用**
    - 在浏览器中打开 `http://localhost:8503`
    - 应用将自动启动并显示主界面
+   - 首次运行可能需要下载 Streamlit 资源
+
+### Docker 部署（可选）
+```bash
+# 构建 Docker 镜像
+docker build -t video-annotation .
+
+# 运行容器
+docker run -p 8503:8503 -v /path/to/videos:/videos video-annotation
+```
 
 ## 📖 使用说明
 
@@ -182,6 +227,7 @@ videoLabel/
 ├── app.py                      # 主应用入口
 ├── requirements.txt            # 项目依赖
 ├── README.md                   # 使用说明
+├── CLAUDE.md                   # Claude AI 开发指南
 ├── PLAN.md                     # 技术方案
 ├── .streamlit/
 │   └── config.toml            # Streamlit 配置
@@ -193,14 +239,65 @@ videoLabel/
 │   ├── data_storage.py        # 数据存储
 │   ├── progress_manager.py    # 进度管理
 │   ├── history_manager.py     # 历史管理
-│   └── favorites_manager.py   # 收藏管理
+│   ├── favorites_manager.py   # 收藏管理
+│   ├── report_rating.py       # 评分报告
+│   └── language_manager.py    # 多语言支持
 ├── config/                     # 配置文件
 │   ├── __init__.py
 │   └── word_bank.py           # 词组库配置
+├── translations/               # 翻译文件
+│   ├── __init__.py
+│   ├── zh_CN.py              # 中文翻译
+│   └── en_US.py              # 英文翻译
 └── data/                       # 数据存储
     ├── favorites.json         # 收藏列表
-    └── path_history.json      # 路径历史
+    ├── path_history.json      # 路径历史
+    └── language_preference.json # 语言偏好
 ```
+
+## 🛠️ 开发指南
+
+### 技术栈
+- **前端框架**: Streamlit
+- **编程语言**: Python 3.7+
+- **关键依赖**: 
+  - streamlit: Web 应用框架
+  - natsort: 自然排序算法
+  - json: 数据序列化
+
+### 架构设计
+应用采用模块化设计，各模块职责明确：
+- **app.py**: 主程序入口，协调各模块
+- **file_manager**: 处理文件系统操作
+- **video_player**: 视频播放控制
+- **annotation_form**: 标注表单逻辑
+- **data_storage**: 数据持久化
+- **progress_manager**: 进度统计
+- **history_manager**: 历史记录管理
+- **favorites_manager**: 收藏功能
+- **report_rating**: 评分报告功能
+- **language_manager**: 多语言支持
+
+### 扩展开发
+1. **添加新的标注字段**：
+   - 修改 `config/word_bank.py` 添加选项
+   - 在 `annotation_form.py` 中添加相应的表单组件
+   - 更新 `data_storage.py` 的数据结构
+
+2. **添加新功能模块**：
+   - 在 `modules/` 目录创建新模块
+   - 在 `app.py` 中导入并集成
+   - 遵循现有的模块化设计模式
+
+3. **自定义样式**：
+   - 修改 `app.py` 中的 CSS 样式
+   - 使用 Streamlit 的主题配置
+
+### 代码规范
+- 使用 UTF-8 编码
+- 遵循 PEP 8 Python 代码规范
+- 函数和变量使用描述性命名
+- 添加必要的错误处理和日志
 
 ## ❓ 常见问题
 
@@ -228,13 +325,68 @@ A: 点击左侧边栏的"🔄 重置"按钮可以清空当前状态
 ### Q: 历史路径记录太多怎么办？
 A: 点击"🗑️ 清空历史记录"按钮可以清除所有历史路径
 
+### Q: 标注数据如何导入导出？
+A: 
+- 导出：直接复制视频目录下的所有 .txt 文件
+- 导入：将 .txt 文件放置在对应视频文件的同一目录
+
+### Q: 如何处理大量视频文件？
+A: 
+1. 建议按批次组织视频文件到不同文件夹
+2. 使用收藏功能标记重要视频
+3. 定期导出已完成的标注数据
+
+### Q: 多人协作如何避免冲突？
+A: 
+1. 为每个标注员分配不同的文件夹
+2. 定期合并标注结果
+3. 使用版本控制系统管理标注文件
+
+## 📈 更新日志
+
+### v1.2.0 (2025-01)
+- ✨ 新增评分报告功能
+- 🌍 添加多语言支持（中文/英文）
+- 🔧 优化文件排序算法
+- 🐛 修复收藏功能相关bug
+
+### v1.1.0 (2024-12)
+- ✨ 新增收藏功能
+- 📊 改进进度统计显示
+- 🔧 优化用户界面布局
+
+### v1.0.0 (2024-11)
+- 🎉 首次发布
+- 📝 基础标注功能
+- 📁 文件管理功能
+- 📊 进度跟踪功能
+
+## 🤝 贡献指南
+
+欢迎贡献代码和提出建议！
+
+1. Fork 项目
+2. 创建功能分支 (`git checkout -b feature/AmazingFeature`)
+3. 提交更改 (`git commit -m 'Add some AmazingFeature'`)
+4. 推送到分支 (`git push origin feature/AmazingFeature`)
+5. 创建 Pull Request
+
+## 📄 许可证
+
+本项目采用 MIT 许可证 - 查看 [LICENSE](LICENSE) 文件了解详情
+
 ## 🔧 技术支持
 
 如果在使用过程中遇到问题：
-1. 检查控制台是否有错误信息
-2. 确认输入的路径和格式是否正确
-3. 重启应用重试
+1. 查看 [常见问题](#常见问题) 部分
+2. 检查控制台错误信息
+3. 提交 Issue 描述问题
+4. 联系技术支持团队
 
 ---
 
 **© 2025 视频标注应用 - 让视频标注更简单、更高效！**
+
+<p align="center">
+  Made with ❤️ by the Video Annotation Team
+</p>
